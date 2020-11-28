@@ -20,7 +20,36 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
+    - name: Cache Gradle packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle
-      run: ./gradlew build
+    - name: Compile classes with Gradle
+      run: ./gradlew classes
+    - name: Compile tests with Gradle
+      run: ./gradlew testClasses
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Cache Gradle packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Runs tests
+      run: ./gradlew grails-test-suite-persistence:test grails-test-suite-uber:test grails-test-suite-web:test
+    - name: Runs more tests
+      run: ./gradlew check -x grails-test-suite-persistence:test -x grails-test-suite-uber:test -x grails-test-suite-web:test
