@@ -61,7 +61,7 @@ class LinkGeneratorWithUrlMappingsSpec extends Specification{
             uri == "$baseUrl/$path"
     }
 
-    @Ignore
+    @Ignore //TODO: Test failing due to a relative url being returned when testing in CI
     void "absolute links are generated when a relative link is asked for, but the deployment context is not known or set"() {
         when:
             context = null
