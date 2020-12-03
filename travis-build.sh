@@ -3,9 +3,9 @@ echo "Gradle command to be run: '$GRADLE_CMD'"
 
 EXIT_STATUS=0
 
-#./gradlew --stop
-#./gradlew clean classes --no-daemon
-#./gradlew testClasses --no-daemon
+./gradlew --stop
+/gradlew clean classes --no-daemon
+./gradlew testClasses --no-daemon
 
 if [[ $TRAVIS_TAG =~ ^v[[:digit:]] ]]; then
     echo "Tagged Release Skipping Tests for Publish"
