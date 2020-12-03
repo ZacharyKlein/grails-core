@@ -5,6 +5,8 @@ name: Grails CI
 
 on:
   push:
+    tags-ignore:
+      - '**'
     branches: [ master ]
   pull_request:
     branches: [ master ]
@@ -49,7 +51,6 @@ jobs:
     - name: Compile tests with Gradle
       run: ./gradlew testClasses
   test:
-    if: contains(github.ref, 'tag') == false
     needs: build
     runs-on: ubuntu-latest
     steps:
