@@ -74,6 +74,12 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: success() && github.event_name == 'push' && matrix.java == '8'
-    steps:
-      -
+#    if: success() && github.event_name == 'push' && matrix.java == '8'
+#    steps:
+#      - name: "Configure Git"
+#        run:
+#          git config --global user.name "$GIT_NAME"
+#          git config --global user.email "$GIT_EMAIL"
+#      - name: "Publish snapshot"
+#        run: ./gradlew -Psigning.keyId="$SIGNING_KEY" -Psigning.password="$SIGNING_PASSPHRASE" -Psigning.secretKeyRingFile="${TRAVIS_BUILD_DIR}/secring.gpg" publish || EXIT_STATUS=$?
+
