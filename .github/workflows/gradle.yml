@@ -77,18 +77,20 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: success() && github.event_name == 'push' && matrix.java == '8'
     env:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
     steps:
       - name: "Configure Git"
+        if: success() && github.event_name == 'push' && matrix.java == '8'
         run:
           git config --global user.name "${{secrets.GIT_NAME}}"
           git config --global user.email "${{secrets.GIT_EMAIL}}"
       - name: "Publish snapshot"
+        if: success() && github.event_name == 'push' && matrix.java == '8'
         run: ./gradlew -Psigning.keyId="${{secrets.SIGNING_KEY}}" -Psigning.password="${{secrets.SIGNING_PASSPHRASE}}" -Psigning.secretKeyRingFile="${GITHUB_WORKSPACE}/secring.gpg" publish || EXIT_STATUS=$?
 #      - name: "Trigger functional tests"
+#        if: success() && github.event_name == 'push' && matrix.java == '8'
 #        run:
 #          git clone -b $TRAVIS_BRANCH https://${GH_TOKEN}@github.com/grails/grails3-functional-tests.git functional-tests
 #          cd functional-tests
