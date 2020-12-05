@@ -1,0 +1,100 @@
+# This workflow will build a Java project with Gradle
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+
+name: Grails CI
+
+on:
+  push:
+    tags-ignore:
+      - '**'
+    branches:
+      - master
+      - '[1-9]+.[0-9]+.x'
+  pull_request:
+    branches:
+      - master
+      - '[1-9]+.[0-9]+.x'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ['8', '11', '14']
+    steps:
+    - name: Get branch info
+      id: branch_name
+      run: |
+        echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+        echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+        echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+    - name: Echo branch info
+      run: |
+        echo $SOURCE_NAME
+        echo $SOURCE_BRANCH
+        echo $SOURCE_TAG
+      env:
+        SOURCE_NAME: ${{ steps.branch_name.outputs.SOURCE_NAME }}
+        SOURCE_BRANCH: ${{ steps.branch_name.outputs.SOURCE_BRANCH }}
+        SOURCE_TAG: ${{ steps.branch_name.outputs.SOURCE_TAG }}
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java }}
+    - name: Cache Gradle packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Compile classes with Gradle
+      run: ./gradlew classes
+    - name: Compile tests with Gradle
+      run: ./gradlew testClasses
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Cache Gradle packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+        restore-keys: ${{ runner.os }}-gradle
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    - name: Runs tests
+      run: ./gradlew grails-test-suite-persistence:test grails-test-suite-uber:test grails-test-suite-web:test
+    - name: Runs more tests
+      run: ./gradlew check -x grails-test-suite-persistence:test -x grails-test-suite-uber:test -x grails-test-suite-web:test
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
+    steps:
+      - name: "Configure Git"
+        if: success() && github.event_name == 'push' && matrix.java == '8'
+        run:
+          git config --global user.name "${{secrets.GIT_NAME}}"
+          git config --global user.email "${{secrets.GIT_EMAIL}}"
+      - name: "Publish snapshot"
+        if: success() && github.event_name == 'push' && matrix.java == '8'
+        run: ./gradlew -Psigning.keyId="${{secrets.SIGNING_KEY}}" -Psigning.password="${{secrets.SIGNING_PASSPHRASE}}" -Psigning.secretKeyRingFile="${GITHUB_WORKSPACE}/secring.gpg" publish || EXIT_STATUS=$?
+#      - name: "Trigger functional tests"
+#        if: success() && github.event_name == 'push' && matrix.java == '8'
+#        run:
+#          git clone -b $TRAVIS_BRANCH https://${GH_TOKEN}@github.com/grails/grails3-functional-tests.git functional-tests
+#          cd functional-tests
+#          echo "$(date)" > .snapshot
+#          git add .snapshot
+#          git commit -m "New Core Snapshot: $(date)"
+#          git push
