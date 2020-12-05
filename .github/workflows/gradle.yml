@@ -7,10 +7,13 @@ on:
   push:
     tags-ignore:
       - '**'
-    branches: [ master ]
+    branches:
+      - master
+      - '[1-9]+.[0-9]+.x'
   pull_request:
-    branches: [ master ]
-
+    branches:
+      - master
+      - '[1-9]+.[0-9]+.x'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -74,12 +77,22 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-#    if: success() && github.event_name == 'push' && matrix.java == '8'
-#    steps:
-#      - name: "Configure Git"
+    if: success() && github.event_name == 'push' && matrix.java == '8'
+    env:
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
+    steps:
+      - name: "Configure Git"
+        run:
+          git config --global user.name "${{secrets.GIT_NAME}}"
+          git config --global user.email "${{secrets.GIT_EMAIL}}"
+      - name: "Publish snapshot"
+        run: ./gradlew -Psigning.keyId="${{secrets.SIGNING_KEY}}" -Psigning.password="${{secrets.SIGNING_PASSPHRASE}}" -Psigning.secretKeyRingFile="${GITHUB_WORKSPACE}/secring.gpg" publish || EXIT_STATUS=$?
+#      - name: "Trigger functional tests"
 #        run:
-#          git config --global user.name "$GIT_NAME"
-#          git config --global user.email "$GIT_EMAIL"
-#      - name: "Publish snapshot"
-#        run: ./gradlew -Psigning.keyId="$SIGNING_KEY" -Psigning.password="$SIGNING_PASSPHRASE" -Psigning.secretKeyRingFile="${TRAVIS_BUILD_DIR}/secring.gpg" publish || EXIT_STATUS=$?
-
+#          git clone -b $TRAVIS_BRANCH https://${GH_TOKEN}@github.com/grails/grails3-functional-tests.git functional-tests
+#          cd functional-tests
+#          echo "$(date)" > .snapshot
+#          git add .snapshot
+#          git commit -m "New Core Snapshot: $(date)"
+#          git push

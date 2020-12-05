@@ -1,0 +1,59 @@
+name: Grails Release
+
+on:
+  push:
+    tags:
+      - 'v[1-9]+.[0-9]+.[0-9]'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_KEY: ${{ secrets.BINTRAY_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: "Configure Git"
+        run:
+          git config --global user.name "${{secrets.GIT_NAME}}"
+          git config --global user.email "${{secrets.GIT_EMAIL}}"
+      - name: "Upload to Bintray"
+        run: ./gradlew --no-daemon publish bintrayUpload
+      - name: "Assemble"
+        if: success()
+        run: ./gradlew --no-daemon assemble
+#      - name: "Publish docs"
+#        run:
+#          git clone https://${GH_TOKEN}@github.com/grails/grails-doc.git -b master grails-doc --single-branch > /dev/null
+#          cd grails-doc
+#
+#          echo "grails.version=${TRAVIS_TAG:1}" > gradle.properties
+#          git add gradle.properties
+#          git commit -m "Release $TRAVIS_TAG docs"
+#          git tag $TRAVIS_TAG
+#          git push --tags
+#          git push
+#          cd ..
+#
+#          # Update the website
+#          echo "set released version in static website"
+#          git clone https://${GH_TOKEN}@github.com/grails/grails-static-website.git
+#          cd grails-static-website
+#          version="$TRAVIS_TAG"
+#          version=${version:1}
+#          ./release.sh $version
+#          git commit -a -m "Updating grails version at static website for Travis build: https://travis-ci.org/$TRAVIS_REPO_SLUG/builds/$TRAVIS_BUILD_ID" && {
+#            git push origin HEAD || true
+#            }
+#          cd ..
+#          rm -rf grails-static-website
+#
+#          # Rebuild Artifactory index
+#          curl -H "X-Api-Key:$ARTIFACTORY_API_KEY" -X POST "http://repo.grails.org/grails/api/maven?repos=libs-releases-local,plugins-releases-local,plugins3-releases-local,core&force=1"
